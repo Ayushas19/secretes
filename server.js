@@ -13,6 +13,11 @@ const PORT = 3000;
 // Serve static assets from /public (e.g. index.html)
 app.use(express.static(path.join(__dirname, "public")));
 
+// Route /admin directly to public/admin.html
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
 // Serve index.html as a fallback for any non-API routes
 app.get("*", (req, res, next) => {
   if (req.path.startsWith("/api/")) {

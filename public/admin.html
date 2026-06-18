@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automata Admin Portal</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cyber: {
+              dark: '#0a0e1a',
+              panel: '#0d1225',
+              border: '#1a2340',
+              green: '#00ff88',
+              greenDim: '#00cc6a',
+              red: '#ff4444',
+              amber: '#ffcc00',
+              blue: '#00b4ff',
+              purple: '#a855f7',
+            }
+          },
+          fontFamily: {
+            mono: ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+            display: ['"Orbitron"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Global Styles ── */
+    body {
+      background-color: #0a0e1a;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(26, 35, 64, 0.2) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.08) 0%, transparent 40%);
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: #e2e8f0;
+    }
+
+    /* ── Scanlines Overlay ── */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      background-size: 100% 4px, 6px 100%;
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0.4;
+    }
+
+    /* ── Glowing Utilities ── */
+    .glow-green {
+      text-shadow: 0 0 10px rgba(0, 255, 136, 0.5), 0 0 2px rgba(0, 255, 136, 0.8);
+    }
+    .glow-red {
+      text-shadow: 0 0 10px rgba(255, 68, 68, 0.5), 0 0 2px rgba(255, 68, 68, 0.8);
+    }
+    .glow-amber {
+      text-shadow: 0 0 10px rgba(255, 204, 0, 0.5), 0 0 2px rgba(255, 204, 0, 0.8);
+    }
+    .glow-purple {
+      text-shadow: 0 0 10px rgba(168, 85, 247, 0.5), 0 0 2px rgba(168, 85, 247, 0.8);
+    }
+
+    .box-glow-green {
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+    }
+    .box-glow-red {
+      box-shadow: 0 0 20px rgba(255, 68, 68, 0.15);
+    }
+
+    /* Glassmorphism Panel */
+    .bg-cyber-panel {
+      background: rgba(13, 18, 37, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(26, 35, 64, 0.6);
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0a0e1a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1a2340;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00ff88;
+    }
+
+    /* Retro grid lines background */
+    .grid-bg {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(26, 35, 64, 0.15) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(26, 35, 64, 0.15) 1px, transparent 1px);
+    }
+  </style>
+</head>
+<body class="grid-bg relative min-h-screen">
+
+  <!-- ========================================== -->
+  <!-- PASSWORD GATE SCREEN (Shown by default)   -->
+  <!-- ========================================== -->
+  <section id="gateScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-[#070a14]/95 backdrop-blur-md">
+    <div class="w-full max-w-md p-8 rounded-xl bg-cyber-panel border border-cyber-border box-glow-green text-center">
+      <div class="flex justify-center mb-6">
+        <div class="relative w-16 h-16 flex items-center justify-center bg-cyber-purple/10 rounded-lg border border-cyber-purple/30">
+          <div class="absolute inset-0 border border-cyber-purple/20 rounded-lg animate-pulse"></div>
+          <svg class="w-8 h-8 text-cyber-purple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+      </div>
+
+      <h1 class="font-display text-xl text-white font-bold tracking-widest uppercase mb-2">ACCESS CONTROL</h1>
+      <p class="text-xs text-gray-500 mb-6 font-mono">AUTOMATA FIX SECURE ADMIN UTILITY</p>
+
+      <div class="space-y-4">
+        <div>
+          <label for="adminPassword" class="block text-[10px] text-gray-500 text-left font-bold tracking-wider uppercase mb-1.5">ENTER PASSWORD</label>
+          <input type="password" id="adminPassword" placeholder="••••••••••••"
+            class="w-full bg-[#070a14] border border-cyber-border rounded-lg px-4 py-3 text-sm text-center text-cyber-green focus:outline-none focus:border-cyber-green tracking-widest font-bold" />
+        </div>
+
+        <p id="gateError" class="text-xs text-cyber-red font-bold hidden"></p>
+
+        <button onclick="attemptAccess()"
+          class="w-full bg-cyber-green/10 border border-cyber-green text-cyber-green hover:bg-cyber-green/20 transition-all font-display text-xs font-bold py-3 rounded-lg uppercase tracking-wider">
+          ▶ Validate Security Token
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================== -->
+  <!-- MAIN DASHBOARD CONTENT (Hidden by default)  -->
+  <!-- ========================================== -->
+  <div id="dashboard" class="hidden max-w-7xl mx-auto px-4 py-8 relative">
+
+    <!-- Top Admin Header -->
+    <header class="flex flex-wrap items-center justify-between gap-6 mb-8 border-b border-cyber-border/40 pb-6">
+      <div>
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="w-2 h-2 rounded-full bg-cyber-green animate-ping"></span>
+          <p class="text-[10px] text-cyber-green tracking-widest font-bold uppercase">LIVE EVENT MONITOR</p>
+        </div>
+        <h1 class="font-display text-2xl md:text-3xl text-white font-black tracking-widest uppercase">
+          AUTOMATA <span class="text-cyber-green glow-green">ADMIN</span> CONTROL
+        </h1>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button onclick="refreshData()" class="px-4 py-2 bg-cyber-border/40 border border-cyber-border text-gray-300 rounded-lg hover:border-cyber-blue hover:text-cyber-blue text-xs font-bold transition-all flex items-center gap-2">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+          </svg>
+          REFRESH
+        </button>
+        <button onclick="downloadReport()" class="px-4 py-2 bg-cyber-green/10 border border-cyber-green text-cyber-green rounded-lg hover:bg-cyber-green/20 text-xs font-bold transition-all flex items-center gap-2">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+          </svg>
+          EXPORT JSON
+        </button>
+        <button onclick="triggerReset()" class="px-4 py-2 bg-cyber-red/10 border border-cyber-red text-cyber-red rounded-lg hover:bg-cyber-red/20 text-xs font-bold transition-all flex items-center gap-2">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
+          </svg>
+          RESET EVENT
+        </button>
+        <button onclick="logoutAdmin()" class="px-3 py-2 bg-gray-900 border border-cyber-border text-gray-500 rounded-lg hover:text-white transition-all text-xs">
+          LOGOUT
+        </button>
+      </div>
+    </header>
+
+    <!-- Event Summary Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-cyber-panel rounded-xl p-4 border border-cyber-border">
+        <p class="text-gray-500 text-[10px] tracking-wider uppercase font-bold">Total Enrolled</p>
+        <p id="statTotal" class="font-display text-2xl md:text-3xl text-white font-bold mt-1">0</p>
+      </div>
+      <div class="bg-cyber-panel rounded-xl p-4 border border-cyber-border">
+        <p class="text-cyber-green text-[10px] tracking-wider uppercase font-bold">Active Right Now</p>
+        <p id="statActive" class="font-display text-2xl md:text-3xl text-cyber-green glow-green font-bold mt-1">0</p>
+      </div>
+      <div class="bg-cyber-panel rounded-xl p-4 border border-cyber-border">
+        <p class="text-cyber-purple text-[10px] tracking-wider uppercase font-bold">Submitted / Done</p>
+        <p id="statSubmitted" class="font-display text-2xl md:text-3xl text-cyber-purple glow-purple font-bold mt-1">0</p>
+      </div>
+      <div class="bg-cyber-panel rounded-xl p-4 border border-cyber-border">
+        <p class="text-cyber-red text-[10px] tracking-wider uppercase font-bold">Terminated</p>
+        <p id="statTerminated" class="font-display text-2xl md:text-3xl text-cyber-red glow-red font-bold mt-1">0</p>
+      </div>
+    </div>
+
+    <!-- Filters & Search Toolbar -->
+    <div class="bg-cyber-panel border border-cyber-border rounded-xl p-4 mb-6 flex flex-wrap gap-4 items-center justify-between">
+      <div class="flex flex-wrap gap-3 items-center flex-grow">
+        <!-- Search Name / GitHub -->
+        <div class="relative w-full sm:w-64">
+          <input type="text" id="filterSearch" placeholder="Search by name or github..." oninput="applyFilters()"
+            class="w-full bg-[#0a0e1a] border border-cyber-border rounded-lg pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-cyber-green text-gray-300" />
+          <svg class="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+
+        <!-- Filter Language -->
+        <select id="filterLanguage" onchange="applyFilters()"
+          class="bg-[#0a0e1a] border border-cyber-border rounded-lg px-3 py-2 text-xs text-gray-400 focus:outline-none focus:border-cyber-green">
+          <option value="">All Languages</option>
+          <option value="C++">C++</option>
+          <option value="Python">Python</option>
+          <option value="Java">Java</option>
+        </select>
+
+        <!-- Filter Status -->
+        <select id="filterStatus" onchange="applyFilters()"
+          class="bg-[#0a0e1a] border border-cyber-border rounded-lg px-3 py-2 text-xs text-gray-400 focus:outline-none focus:border-cyber-green">
+          <option value="">All Statuses</option>
+          <option value="active">Active Attempt</option>
+          <option value="done">Submitted</option>
+          <option value="terminated">Terminated</option>
+        </select>
+      </div>
+
+      <div class="text-[10px] text-gray-600 font-mono">
+        AUTO-REFRESH ACTIVE (5S)
+      </div>
+    </div>
+
+    <!-- Participants Grid list -->
+    <div id="participantsList" class="space-y-4">
+      <!-- Loading indicator -->
+      <div class="text-center py-12 bg-cyber-panel border border-cyber-border rounded-xl">
+        <p class="text-sm text-cyber-blue animate-pulse">CONNECTING TO HOST DATABASE...</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- JavaScript Logics -->
+  <script>
+    const ADMIN_KEY = "6393403504";
+    let allParticipants = [];
+    let pollingInterval = null;
+
+    // Check if session already authenticated
+    window.addEventListener("DOMContentLoaded", () => {
+      if (sessionStorage.getItem("admin_authenticated") === "true") {
+        unlockDashboard();
+      } else {
+        document.getElementById("adminPassword").focus();
+        // Bind keypress enter
+        document.getElementById("adminPassword").addEventListener("keydown", (e) => {
+          if (e.key === "Enter") attemptAccess();
+        });
+      }
+    });
+
+    function attemptAccess() {
+      const input = document.getElementById("adminPassword").value.trim();
+      const errEl = document.getElementById("gateError");
+
+      if (input === ADMIN_KEY) {
+        sessionStorage.setItem("admin_authenticated", "true");
+        errEl.classList.add("hidden");
+        unlockDashboard();
+      } else {
+        errEl.textContent = "ACCESS INSUFFICIENT: INCORRECT ACCESS TOKEN";
+        errEl.classList.remove("hidden");
+      }
+    }
+
+    function unlockDashboard() {
+      document.getElementById("gateScreen").classList.add("hidden");
+      document.getElementById("dashboard").classList.remove("hidden");
+      refreshData();
+      startPolling();
+    }
+
+    function logoutAdmin() {
+      sessionStorage.removeItem("admin_authenticated");
+      clearInterval(pollingInterval);
+      document.getElementById("dashboard").classList.add("hidden");
+      document.getElementById("gateScreen").classList.remove("hidden");
+      document.getElementById("adminPassword").value = "";
+      document.getElementById("adminPassword").focus();
+    }
+
+    function startPolling() {
+      clearInterval(pollingInterval);
+      pollingInterval = setInterval(refreshData, 5000);
+    }
+
+    async function refreshData() {
+      try {
+        const response = await fetch(`/api/results?secret=${ADMIN_KEY}`);
+        if (!response.ok) {
+          throw new Error("Unauthorized or database failure.");
+        }
+        const data = await response.json();
+        allParticipants = data.participants || [];
+        
+        updateSummaryStats();
+        applyFilters();
+      } catch (e) {
+        console.error("Refresh error:", e);
+        document.getElementById("participantsList").innerHTML = `
+          <div class="text-center py-12 bg-cyber-panel border border-cyber-red/30 rounded-xl">
+            <p class="text-sm text-cyber-red glow-red uppercase">Connection Broken: ${e.message}</p>
+            <p class="text-xs text-gray-500 mt-2">Check backend server connectivity or API tokens.</p>
+          </div>
+        `;
+      }
+    }
+
+    function updateSummaryStats() {
+      document.getElementById("statTotal").textContent = allParticipants.length;
+      
+      const active = allParticipants.filter(p => !p.finalSubmitted && !p.proctorTerminated).length;
+      const done = allParticipants.filter(p => p.finalSubmitted && !p.proctorTerminated).length;
+      const term = allParticipants.filter(p => p.proctorTerminated).length;
+
+      document.getElementById("statActive").textContent = active;
+      document.getElementById("statSubmitted").textContent = done;
+      document.getElementById("statTerminated").textContent = term;
+    }
+
+    function applyFilters() {
+      const search = document.getElementById("filterSearch").value.toLowerCase().trim();
+      const lang = document.getElementById("filterLanguage").value;
+      const status = document.getElementById("filterStatus").value;
+
+      const filtered = allParticipants.filter(p => {
+        const matchesSearch = !search || 
+          p.name.toLowerCase().includes(search) || 
+          p.username.toLowerCase().includes(search);
+        
+        const matchesLang = !lang || p.language === lang;
+        
+        let matchesStatus = true;
+        if (status === "active") {
+          matchesStatus = !p.finalSubmitted && !p.proctorTerminated;
+        } else if (status === "done") {
+          matchesStatus = p.finalSubmitted && !p.proctorTerminated;
+        } else if (status === "terminated") {
+          matchesStatus = p.proctorTerminated;
+        }
+
+        return matchesSearch && matchesLang && matchesStatus;
+      });
+
+      renderParticipantsList(filtered);
+    }
+
+    function renderParticipantsList(list) {
+      const container = document.getElementById("participantsList");
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 bg-cyber-panel border border-cyber-border rounded-xl">
+            <p class="text-xs text-gray-500 font-mono">NO CANDIDATE MATCHES CURRENT CRITERIA</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map((p, idx) => {
+        // Calculate score
+        let score = 100;
+        if (p.proctorTerminated) {
+          score = -25;
+        } else {
+          // deduction is stored on server (usually 0 unless terminated, but warnings could deduct dynamically)
+          score = 100 - (p.proctorWarnings * 10); // simulate a warning scale deduction for detail
+          if (score < 0) score = 0;
+        }
+
+        let statusText = "Active Attempt";
+        let statusClass = "text-cyber-green bg-cyber-green/10 border-cyber-green/20";
+        if (p.proctorTerminated) {
+          statusText = "Terminated";
+          statusClass = "text-cyber-red bg-cyber-red/10 border-cyber-red/20";
+        } else if (p.finalSubmitted) {
+          statusText = "Submitted";
+          statusClass = "text-cyber-purple bg-cyber-purple/10 border-cyber-purple/20";
+        }
+
+        return `
+          <div class="bg-cyber-panel border border-cyber-border rounded-xl overflow-hidden hover:border-cyber-border/80 transition-all">
+            <!-- Header Bar -->
+            <div class="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 border-b border-cyber-border/40">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 rounded-lg bg-[#0a0e1a] border border-cyber-border flex items-center justify-center font-display text-cyber-blue font-bold">
+                  ${p.language === "C++" ? "C++" : p.language === "Python" ? "PY" : "JV"}
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-white leading-tight">${p.name || "Anonymous Candidate"}</h3>
+                  <p class="text-[10px] text-gray-500 font-mono mt-0.5">github: @${p.username}</p>
+                </div>
+              </div>
+
+              <div class="flex items-center flex-wrap gap-4 sm:gap-6">
+                <!-- Status -->
+                <span class="px-2.5 py-1 text-[9px] font-mono font-bold border rounded-full uppercase tracking-wider ${statusClass}">
+                  ${statusText}
+                </span>
+
+                <!-- Warnings -->
+                <div>
+                  <p class="text-[8px] text-gray-500 uppercase tracking-widest">Warnings</p>
+                  <p class="text-xs font-bold font-mono ${p.proctorWarnings > 0 ? 'text-cyber-red glow-red' : 'text-cyber-green'}">
+                    ${p.proctorWarnings} / 4
+                  </p>
+                </div>
+
+                <!-- Reconnects -->
+                <div>
+                  <p class="text-[8px] text-gray-500 uppercase tracking-widest">Disconnects</p>
+                  <p class="text-xs font-bold font-mono text-gray-300">
+                    ${p.disconnects || 0}
+                  </p>
+                </div>
+
+                <!-- Tab Switches -->
+                <div>
+                  <p class="text-[8px] text-gray-500 uppercase tracking-widest">Tab Switches</p>
+                  <p class="text-xs font-bold font-mono ${p.tabSwitchCount > 1 ? 'text-cyber-amber glow-amber' : 'text-gray-300'}">
+                    ${p.tabSwitchCount || 0}
+                  </p>
+                </div>
+
+                <!-- Final Score -->
+                <div class="text-right">
+                  <p class="text-[8px] text-gray-500 uppercase tracking-widest">Calculated Score</p>
+                  <p class="text-sm font-display font-black tracking-wider ${score < 0 ? 'text-cyber-red glow-red' : 'text-cyber-green glow-green'}">
+                    ${score} PTS
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Expanding Content Area -->
+            <div class="bg-[#0a0e1a]/40 p-4 sm:p-5 grid grid-cols-1 lg:grid-cols-2 gap-5 border-b border-cyber-border/40">
+              
+              <!-- Left: Proctored Activity Log -->
+              <div>
+                <h4 class="text-[10px] font-bold text-gray-400 tracking-wider uppercase mb-2">Proctor Log Console</h4>
+                <div class="h-44 bg-[#080c18] border border-cyber-border rounded-lg p-3 overflow-y-auto font-mono text-[10px] space-y-1.5 box-glow-red">
+                  ${p.proctorLogs.length === 0 ? `
+                    <div class="text-gray-600 italic">No proctoring violations logged. Posture and audio levels stable.</div>
+                  ` : p.proctorLogs.map(log => {
+                    const time = new Date(log.timestamp).toLocaleTimeString();
+                    return `
+                      <div class="flex gap-2 leading-relaxed">
+                        <span class="text-gray-600">${time}</span>
+                        <span class="text-cyber-red font-bold">[${log.type}]</span>
+                        <span class="text-gray-400">${log.reason}</span>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+
+              <!-- Right: Written Explanation -->
+              <div>
+                <h4 class="text-[10px] font-bold text-gray-400 tracking-wider uppercase mb-2">Explanation & logic Defense</h4>
+                <div class="h-44 bg-[#080c18] border border-cyber-border rounded-lg p-3 overflow-y-auto text-xs text-gray-400 leading-relaxed font-mono">
+                  ${p.explanation ? p.explanation : `<span class="text-gray-600 italic">Candidate has not submitted an explanation defense yet.</span>`}
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Submitted Code Area (Expandable) -->
+            <div class="bg-[#0d1225]/45">
+              <button onclick="toggleCodeDrawer(${idx})"
+                class="w-full text-left px-5 py-2.5 text-[10px] font-bold text-cyber-blue hover:text-white transition-all flex items-center justify-between border-t border-cyber-border/20">
+                <span>⚡ CLICK TO EXPAND CANDIDATE DP CODE BLOCK</span>
+                <span id="chevron-${idx}">[+] EXPAND</span>
+              </button>
+              <div id="drawer-${idx}" class="hidden p-4 sm:p-5 bg-[#080c18] border-t border-cyber-border/45">
+                <pre class="overflow-x-auto text-[11px] leading-relaxed text-cyber-green bg-[#05070e] border border-cyber-border p-4 rounded-lg font-mono"><code>${escapeHTML(p.fixCode || "// Code not submitted yet.")}</code></pre>
+              </div>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleCodeDrawer(idx) {
+      const el = document.getElementById(`drawer-${idx}`);
+      const buttonText = document.getElementById(`chevron-${idx}`);
+      if (el.classList.contains("hidden")) {
+        el.classList.remove("hidden");
+        buttonText.textContent = "[-] COLLAPSE";
+      } else {
+        el.classList.add("hidden");
+        buttonText.textContent = "[+] EXPAND";
+      }
+    }
+
+    function escapeHTML(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function downloadReport() {
+      if (allParticipants.length === 0) {
+        alert("No participant records available to export.");
+        return;
+      }
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(allParticipants, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href",     dataStr);
+      downloadAnchor.setAttribute("download", `automata_participants_report_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    async function triggerReset() {
+      const confirm = window.confirm("WARNING: This will delete ALL logged in participants, scores, and active logs. Are you absolutely sure?");
+      if (!confirm) return;
+
+      try {
+        const res = await fetch("/api/test/reset-event", { method: "POST" });
+        const data = await res.json();
+        alert(data.message || "Event reset successfully.");
+        refreshData();
+      } catch (e) {
+        alert("Failed to reset event: " + e.message);
+      }
+    }
+  </script>
+</body>
+</html>
