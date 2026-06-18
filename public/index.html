@@ -970,6 +970,7 @@
     let calibrationAnalyser = null;
     let calibrationVideoInterval = null;
     let stableDeviceTicks = 0;
+    let lastKeyPressTime = 0;
 
     // Generate programmatic synth tones via Web Audio API
     function playTone(freq, type, duration) {
@@ -1055,8 +1056,7 @@
           clearInterval(audioMonitorInterval);
           return;
         }
-        if (isAuditActive) return;
-
+        // We analyze audio levels during both standard exam and room audit scans
         audioAnalyser.getByteFrequencyData(dataArray);
         let sum = 0;
         for (let i = 0; i < dataArray.length; i++) {
@@ -1079,7 +1079,11 @@
           }
           if (noiseConsecutiveMs >= 1500) {
             noiseConsecutiveMs = 0;
-            triggerProctorWarning("UNUSUAL SOUND DETECTED", "Persistent talking or audio anomaly caught on mic.");
+            if (isAuditActive) {
+              triggerProctorWarning("ROOM AUDIT VIOLATION (SOUND)", "Unusual whispering, talking, or audio disturbance detected during 360° room audit.");
+            } else {
+              triggerProctorWarning("UNUSUAL SOUND DETECTED", "Persistent talking or audio anomaly caught on mic.");
+            }
           }
         } else {
           noiseConsecutiveMs = Math.max(0, noiseConsecutiveMs - 100);
@@ -1217,36 +1221,62 @@
               $("objectStatusText").textContent = "SCANNING...";
               $("objectStatusText").classList.remove("text-cyber-green", "text-cyber-red");
               $("objectStatusText").classList.add("text-cyber-amber");
+            } else if (isAuditActive && motionMetric > 25) {
+              highMotionSecs += 0.25;
+              if (highMotionSecs >= 1.5) {
+                highMotionSecs = 0;
+                triggerProctorWarning("ROOM AUDIT VIOLATION (MOTION)", "Extreme motion or camera shaking detected during 360° room audit.");
+              }
             } else {
               highMotionSecs = 0;
-              $("objectStatusText").textContent = "SECURE";
-              $("objectStatusText").classList.remove("text-cyber-amber", "text-cyber-red");
-              $("objectStatusText").classList.add("text-cyber-green");
+              if (!isAuditActive) {
+                $("objectStatusText").textContent = "SECURE";
+                $("objectStatusText").classList.remove("text-cyber-amber", "text-cyber-red");
+                $("objectStatusText").classList.add("text-cyber-green");
+              }
             }
           }
 
-          // 3. Eye Gaze tracking check
+          // 3. Eye Gaze tracking check (exemption: allowed to look down at keyboard area if typing)
           const gazeDeviating = !isMouseInWindow || (motionMetric > 4 && Math.random() < 0.15); 
+          const isTyping = (Date.now() - lastKeyPressTime) < 2000;
+
           if (gazeDeviating && !isAuditActive) {
-            gazeOutSecs += 0.25;
-            if (gazeOutSecs >= 2.0) {
+            if (isTyping) {
+              // Permitted down gaze (using keyboard area)
               gazeOutSecs = 0;
-              triggerProctorWarning("GAZE DEVIATION", "Avoid looking away from the exam interface.");
+              $("gazeStatusText").textContent = "KEYBOARD AREA";
+              $("gazeStatusText").classList.remove("text-cyber-green", "text-cyber-red", "pulse-glow");
+              $("gazeStatusText").classList.add("text-cyber-amber");
+
+              ctx.strokeStyle = "#ffcc00";
+              ctx.lineWidth = 2;
+              ctx.strokeRect(faceBoxX, faceBoxY, faceBoxW, faceBoxH);
+              ctx.fillStyle = "#ffcc00";
+              ctx.font = "bold 9px monospace";
+              ctx.fillText("GAZE: KEYBOARD AREA", faceBoxX, faceBoxY - 8);
+            } else {
+              // Cheating down gaze / deviation (no typing)
+              gazeOutSecs += 0.25;
+              if (gazeOutSecs >= 2.0) {
+                gazeOutSecs = 0;
+                triggerProctorWarning("GAZE DEVIATION (DOWNWARD)", "Downward gaze deviation detected below the monitor area without active keyboard input.");
+              }
+              $("gazeStatusText").textContent = "GAZE DOWN";
+              $("gazeStatusText").classList.remove("text-cyber-green", "text-cyber-amber");
+              $("gazeStatusText").classList.add("text-cyber-red", "pulse-glow");
+              
+              ctx.strokeStyle = "#ff4444";
+              ctx.lineWidth = 3;
+              ctx.strokeRect(faceBoxX - 5, faceBoxY - 5, faceBoxW + 10, faceBoxH + 10);
+              ctx.fillStyle = "#ff4444";
+              ctx.font = "bold 10px monospace";
+              ctx.fillText("WARN: GAZE DEVIATION", faceBoxX, faceBoxY - 10);
             }
-            $("gazeStatusText").textContent = "DEVIATING";
-            $("gazeStatusText").classList.remove("text-cyber-green");
-            $("gazeStatusText").classList.add("text-cyber-red", "pulse-glow");
-            
-            ctx.strokeStyle = "#ff4444";
-            ctx.lineWidth = 3;
-            ctx.strokeRect(faceBoxX - 5, faceBoxY - 5, faceBoxW + 10, faceBoxH + 10);
-            ctx.fillStyle = "#ff4444";
-            ctx.font = "bold 10px monospace";
-            ctx.fillText("WARN: GAZE DEVIATION", faceBoxX, faceBoxY - 10);
           } else {
             gazeOutSecs = 0;
             $("gazeStatusText").textContent = "CENTERED";
-            $("gazeStatusText").classList.remove("text-cyber-red", "pulse-glow");
+            $("gazeStatusText").classList.remove("text-cyber-red", "text-cyber-amber", "pulse-glow");
             $("gazeStatusText").classList.add("text-cyber-green");
 
             ctx.strokeStyle = "#00ff88";
@@ -2278,6 +2308,8 @@
 
     // 2. Disable Ctrl+C / Ctrl+V / Ctrl+U / Ctrl+S globally (and MacOS Cmd equivalents)
     document.addEventListener("keydown", (e) => {
+      lastKeyPressTime = Date.now();
+
       // Shift+Alt+W: Administrator Manual Warning Trigger
       if (e.shiftKey && e.altKey && e.key.toLowerCase() === "w") {
         triggerProctorWarning("MANUAL TEST WARNING", "Simulated warning triggered by reviewer (Shift+Alt+W).");
