@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Automata Fix Challenge — Live Event</title>
   <meta name="description"
-    content="Real-time competitive Automata Fix programming challenge. Fix the broken Drone Path Validator code in 15 minutes." />
+    content="Real-time competitive Automata Fix programming challenge. Fix the broken Edit Distance code in 15 minutes." />
 
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -651,7 +651,7 @@
           <span id="autoSaveStatus" class="text-[10px] text-gray-600 ml-auto">Auto-saving...</span>
         </div>
         <textarea id="fixTextarea" rows="12"
-          placeholder="class Solution {&#10;    public boolean isSafeFlight(...) {&#10;        // Fix the bugs here...&#10;    }&#10;}"
+          placeholder="class Solution {&#10;    public int minDistance(...) {&#10;        // Fix the bugs here...&#10;    }&#10;}"
           spellcheck="false" class="w-full rounded-lg p-4 text-sm leading-relaxed"></textarea>
       </div>
 
@@ -1542,11 +1542,11 @@
       let defaultCode = "";
       const lang = $("languageSelect").value;
       if (lang === "C++") {
-        defaultCode = `#include <string>\n#include <cmath>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    bool isSafeFlight(string commands, int initialBattery, int maxRange) {\n        int currentX = 0;\n        int currentY = 0;\n        int batteryRemaining = initialBattery;\n        int totalStepsTaken = 0;\n\n        for (char cmd : commands) {\n            // Maybe flaw is here\n            if (batteryRemaining <= 0) {\n                return false;\n            }\n            \n            if (cmd == 'N') {\n                currentY += 1;\n            } else if (cmd == 'S') {\n                currentY -= 1;\n            } else if (cmd == 'E') {\n                currentX += 1;\n            } else if (cmd == 'W') {\n                // Maybe flaw is here\n                currentY -= 1; \n            }\n            \n            batteryRemaining--;\n            totalStepsTaken++;\n\n            // Maybe flaw is here\n            if (currentX > maxRange || currentY > maxRange || currentX < 0 || currentY < 0) {\n                return false;\n            }\n        }\n        \n        return true;\n    }\n};`;
+        defaultCode = `#include <iostream>\n#include <vector>\n#include <string>\n#include <algorithm>\n\nusing namespace std;\n\nclass Solution {\npublic:\n    int minDistance(string word1, string word2) {\n        int m = word1.length();\n        int n = word2.length();\n        \n        vector<vector<int>> dp(m + 1, vector<int>(n + 1, 0));\n        \n        for (int i = 0; i <= m; i++) {\n            dp[i][0] = i;\n        }\n        for (int j = 0; j <= n; j++) {\n            dp[0][j] = 0; // The bug is here\n        }\n        \n        for (int i = 1; i <= m; i++) {\n            for (int j = 1; j <= n; j++) {\n                if (word1[i - 1] == word2[j - 1]) {\n                    dp[i][j] = dp[i - 1][j - 1];\n                } else {\n                    dp[i][j] = 1 + min({dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]});\n                }\n            }\n        }\n        return dp[m][n];\n    }\n};`;
       } else if (lang === "Python") {
-        defaultCode = `class Solution:\n    def isSafeFlight(self, commands: str, initialBattery: int, maxRange: int) -> bool:\n        current_x = 0\n        current_y = 0\n        battery_remaining = initialBattery\n        total_steps_taken = 0\n        \n        for cmd in commands:\n            # Maybe flaw is here\n            if battery_remaining <= 0:\n                return False\n                \n            if cmd == 'N':\n                current_y += 1\n            elif cmd == 'S':\n                current_y -= 1\n            elif cmd == 'E':\n                current_x += 1\n            elif cmd == 'W':\n                # Maybe flaw is here\n                current_y -= 1\n                \n            battery_remaining -= 1\n            total_steps_taken += 1\n            \n            # Maybe flaw is here\n            if current_x > maxRange or current_y > maxRange or current_x < 0 or current_y < 0:\n                return False\n                \n        return True`;
+        defaultCode = `class Solution:\n    def minDistance(self, word1: str, word2: str) -> int:\n        m, n = len(word1), len(word2)\n        \n        dp = [[0] * (n + 1) for _ in range(m + 1)]\n        \n        for i in range(m + 1):\n            dp[i][0] = i\n            \n        for j in range(n + 1):\n            dp[0][j] = 0 # The bug is here\n            \n        for i in range(1, m + 1):\n            for j in range(1, n + 1):\n                if word1[i - 1] == word2[j - 1]:\n                    dp[i][j] = dp[i - 1][j - 1]\n                else:\n                    dp[i][j] = 1 + min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])\n                    \n        return dp[m][n]`;
       } else if (lang === "Java") {
-        defaultCode = `class Solution {\n    public boolean isSafeFlight(String commands, int initialBattery, int maxRange) {\n        int currentX = 0;\n        int currentY = 0;\n        int batteryRemaining = initialBattery;\n        int totalStepsTaken = 0;\n\n        for (int i = 0; i < commands.length(); i++) {\n            char cmd = commands.charAt(i);\n            \n            // Maybe flaw is here\n            if (batteryRemaining <= 0) {\n                return false;\n            }\n\n            if (cmd == 'N') {\n                currentY += 1;\n            } else if (cmd == 'S') {\n                currentY -= 1;\n            } else if (cmd == 'E') {\n                currentX += 1;\n            } else if (cmd == 'W') {\n                // Maybe flaw is here\n                currentY -= 1;\n            }\n\n            batteryRemaining--;\n            totalStepsTaken++;\n\n            // Maybe flaw is here\n            if (currentX > maxRange || currentY > maxRange || currentX < 0 || currentY < 0) {\n                return false;\n            }\n        }\n\n        return true;\n    }\n}`;
+        defaultCode = `class Solution {\n    public int minDistance(String word1, String word2) {\n        int m = word1.length();\n        int n = word2.length();\n        \n        int[][] dp = new int[m + 1][n + 1];\n        \n        for (int i = 0; i <= m; i++) {\n            dp[i][0] = i;\n        }\n        for (int j = 0; j <= n; j++) {\n            dp[0][j] = 0; // The bug is here\n        }\n        \n        for (int i = 1; i <= m; i++) {\n            for (int j = 1; j <= n; j++) {\n                if (word1.charAt(i - 1) == word2.charAt(j - 1)) {\n                    dp[i][j] = dp[i - 1][j - 1];\n                } else {\n                    dp[i][j] = 1 + Math.min(dp[i - 1][j - 1], \n                                   Math.min(dp[i - 1][j], dp[i][j - 1]));\n                }\n            }\n        }\n        return dp[m][n];\n    }\n}`;
       }
 
       showFixPhase(defaultCode);
@@ -1799,27 +1799,24 @@
         "║          AUTOMATA FIX CHALLENGE — PROBLEM STATEMENT          ║",
         "╠══════════════════════════════════════════════════════════════╣",
         "║                                                              ║",
-        "║  The Problem: The Drone Path Validator                       ║",
+        "║  The Problem: Edit Distance                                  ║",
         "║                                                              ║",
-        "║  A cargo drone moves on a 2D grid starting at (0,0).         ║",
-        "║  Commands: 'N' (+y), 'S' (-y), 'E' (+x), 'W' (-x).           ║",
-        "║  Each move costs 1 battery unit.                             ║",
+        "║  Given two strings word1 and word2, return the minimum       ║",
+        "║  number of operations required to convert word1 to word2.    ║",
         "║                                                              ║",
-        "║  Rules:                                                      ║",
-        "║  - Starts at (0,0) with initialBattery units.                ║",
-        "║  - Safe zone: -maxRange to +maxRange on both axes.           ║",
-        "║  - Fail if battery < 0 or |x| or |y| > maxRange.             ║",
-        "║  - Return true if drone completes all commands safely.       ║",
+        "║  Permitted operations:                                       ║",
+        "║  - Insert a character                                        ║",
+        "║  - Delete a character                                        ║",
+        "║  - Replace a character                                       ║",
         "║                                                              ║",
-        "║  Example 1: 'NNENW', battery=6, range=3 -> true              ║",
-        "║    Moves=5, battery left=1, max coord (1,3) in range.        ║",
-        "║  Example 2: 'EEEE', battery=5, range=2 -> false              ║",
-        "║    3rd move: x=3 > maxRange=2, breached.                     ║",
+        "║  Example 1: word1 = \"horse\", word2 = \"ros\" -> 3              ║",
+        "║    horse -> rorse (replace 'h' with 'r')                     ║",
+        "║    rorse -> rose (delete 'r')                                ║",
+        "║    rose -> ros (delete 'e')                                  ║",
         "║                                                              ║",
         "║  YOUR TASK:                                                  ║",
-        "║  The code has MULTIPLE BUGS. Find and fix ALL of them.       ║",
-        "║  Do NOT change the overall structure or remove variables.    ║",
-        "║  Target only the specific lines causing incorrect behavior.  ║",
+        "║  There is a logical bug in the initialization phase.         ║",
+        "║  Find and fix the line(s) causing the issue.                 ║",
         "║                                                              ║",
         "╚══════════════════════════════════════════════════════════════╝"
       ];
