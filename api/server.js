@@ -540,7 +540,7 @@ app.post("/api/proctor/violation", async (req, res) => {
       reason: reason || "Unusual movement detected",
     });
 
-    if (p.proctorWarnings >= 3) {
+    if (p.proctorWarnings >= 5) {
       p.proctorTerminated = true;
       p.scoreDeduction = -25;
       p.fixLocked = true;

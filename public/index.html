@@ -521,7 +521,7 @@
                 <span class="text-cyber-red font-mono text-sm">04</span>
                 <div>
                   <h4 class="text-xs font-bold text-gray-300 uppercase">Termination Penalty</h4>
-                  <p class="text-[10px] text-gray-500">Max 2 warnings. The 3rd violation locks the exam and deducts -25 points.</p>
+                  <p class="text-[10px] text-gray-500">Max 4 warnings. The 5th violation locks the exam and deducts -25 points.</p>
                 </div>
               </div>
             </div>
@@ -790,7 +790,7 @@
           </div>
           <div class="flex justify-between text-xs">
             <span class="text-gray-500">Warnings Logged:</span>
-            <span class="text-cyber-red font-bold">3 / 2 (LIMIT EXCEEDED)</span>
+            <span class="text-cyber-red font-bold">5 / 4 (LIMIT EXCEEDED)</span>
           </div>
           <div class="flex justify-between text-xs border-t border-cyber-border pt-2">
             <span class="text-cyber-red font-bold">PENALTY APPLIED:</span>
@@ -850,9 +850,9 @@
       <!-- Live Proctor Status Panels -->
       <div class="p-3 bg-[#0d1225] space-y-2.5">
         <!-- Warnings Meter -->
-        <div class="flex items-center justify-between text-xs">
+         <div class="flex items-center justify-between text-xs">
           <span class="text-gray-400 font-bold">Warnings Issued</span>
-          <span id="hudWarningsCount" class="font-display text-cyber-green font-bold px-2 py-0.5 bg-cyber-green/10 border border-cyber-green/20 rounded">0 / 2</span>
+          <span id="hudWarningsCount" class="font-display text-cyber-green font-bold px-2 py-0.5 bg-cyber-green/10 border border-cyber-green/20 rounded">0 / 4</span>
         </div>
 
         <!-- Real-Time Metrics -->
@@ -1007,7 +1007,7 @@
     function startProctoringEngine() {
       // Show HUD
       $("proctorHUD").classList.remove("hidden");
-      $("hudWarningsCount").textContent = `${proctorWarnings} / 2`;
+      $("hudWarningsCount").textContent = `${proctorWarnings} / 4`;
       if (proctorWarnings > 0) {
         $("hudWarningsCount").classList.remove("text-cyber-green");
         $("hudWarningsCount").classList.add("text-cyber-red", "glow-red");
@@ -1070,14 +1070,14 @@
         if (audioBar) audioBar.style.width = `${pct}%`;
         if (audioText) audioText.textContent = `${Math.round(avg)} dB`;
 
-        const threshold = 35; 
+        const threshold = 55; 
         if (avg > threshold) {
           noiseConsecutiveMs += 100;
           if (audioBar) {
             audioBar.classList.remove("bg-cyber-green");
             audioBar.classList.add("bg-cyber-red");
           }
-          if (noiseConsecutiveMs >= 1500) {
+          if (noiseConsecutiveMs >= 3000) {
             noiseConsecutiveMs = 0;
             if (isAuditActive) {
               triggerProctorWarning("ROOM AUDIT VIOLATION (SOUND)", "Unusual whispering, talking, or audio disturbance detected during 360° room audit.");
@@ -1192,9 +1192,9 @@
           }
 
           // 2. Stable posture handheld device detection
-          if (faceMotion < 0.6 && lowerMotion > 2.0 && !isAuditActive) {
+          if (faceMotion < 0.6 && lowerMotion > 3.5 && !isAuditActive) {
             stableDeviceTicks += 0.25;
-            if (stableDeviceTicks >= 1.5) {
+            if (stableDeviceTicks >= 3.0) {
               stableDeviceTicks = 0;
               triggerProctorWarning("MOBILE/HANDHELD DEVICE DETECTED", "Suspicious hand-held device movement detected in lower frame while head is stable.");
             }
@@ -1212,9 +1212,9 @@
             stableDeviceTicks = Math.max(0, stableDeviceTicks - 0.25);
 
             // 2b. General High motion signature check
-            if (motionMetric > 15 && !isAuditActive) {
+            if (motionMetric > 25 && !isAuditActive) {
               highMotionSecs += 0.25;
-              if (highMotionSecs >= 1.5) {
+              if (highMotionSecs >= 3.0) {
                 highMotionSecs = 0;
                 triggerProctorWarning("HIGH MOTION DETECTED", "Abrupt movement signature. Maintain a stable posture.");
               }
@@ -1223,7 +1223,7 @@
               $("objectStatusText").classList.add("text-cyber-amber");
             } else if (isAuditActive && motionMetric > 25) {
               highMotionSecs += 0.25;
-              if (highMotionSecs >= 1.5) {
+              if (highMotionSecs >= 3.0) {
                 highMotionSecs = 0;
                 triggerProctorWarning("ROOM AUDIT VIOLATION (MOTION)", "Extreme motion or camera shaking detected during 360° room audit.");
               }
@@ -1258,7 +1258,7 @@
             } else {
               // Cheating down gaze / deviation (no typing)
               gazeOutSecs += 0.25;
-              if (gazeOutSecs >= 2.0) {
+              if (gazeOutSecs >= 4.0) {
                 gazeOutSecs = 0;
                 triggerProctorWarning("GAZE DEVIATION (DOWNWARD)", "Downward gaze deviation detected below the monitor area without active keyboard input.");
               }
@@ -1337,7 +1337,7 @@
 
         const hudCount = $("hudWarningsCount");
         if (hudCount) {
-          hudCount.textContent = `${proctorWarnings} / 2`;
+          hudCount.textContent = `${proctorWarnings} / 4`;
           hudCount.classList.remove("text-cyber-green");
           hudCount.classList.add("text-cyber-red", "glow-red");
         }
@@ -1357,7 +1357,7 @@
                 <line x1="12" y1="9" x2="12" y2="13" />
                 <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
-              <span>WARNING (${proctorWarnings}/2) — ${type}</span>
+              <span>WARNING (${proctorWarnings}/4) — ${type}</span>
             </div>
             <span class="text-[10px] font-normal font-mono text-gray-300 block mt-1">${reason}</span>
           `;
@@ -1695,7 +1695,7 @@
             sum += calAudioData[i];
           }
           const avg = sum / calAudioData.length;
-          if (avg > 35) {
+          if (avg > 55) {
             calWarnings.mic++;
             if (calWarnings.mic % 5 === 0) {
               logDiagnostic(`[${(calTime/1000).toFixed(1)}s] WARNING: Noise level too high (${Math.round(avg)} dB).`);
